@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}Clients - AquaCRM{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-gray-900 dark:to-slate-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Page Header -->
+        <div class="relative overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-xl ring-1 ring-black/5 dark:ring-white/10 mb-8">
+            <div class="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900"></div>
+            <div class="relative px-8 py-8">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div class="space-y-2">
+                        <h1 class="text-2xl font-semibold text-white tracking-tight">Client Management</h1>
+                        <p class="text-slate-300 text-base">Manage your pressure washing clients and build lasting relationships</p>
+                    </div>
+                    <div class="mt-6 lg:mt-0">
+                        <a href="{{ url_for('clients.create') }}" 
+                           class="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-gray-100 px-6 py-3 text-sm font-medium text-slate-900 shadow-lg hover:bg-slate-50 dark:hover:bg-gray-200 transition-all duration-200 hover:scale-105">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Add New Client
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="rounded-2xl bg-white dark:bg-gray-800 p-6 shadow-lg ring-1 ring-black/5 dark:ring-white/10 mb-8">
+            <form method="GET" class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1 relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input type="text" name="search" placeholder="Search clients by name, email, or location..." 
+                        value="{{ request.args.get('search', '') }}"
+                        class="pl-12 w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-700/50 py-3 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-200 dark:ring-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400 transition-all">
+                </div>
+                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-slate-900 dark:bg-slate-700 px-6 py-3 text-sm font-medium text-white shadow-lg hover:bg-slate-800 dark:hover:bg-slate-600 transition-all duration-200 hover:scale-105">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Search
+                </button>
+            </form>
+        </div>
+
+        <!-- Clients List -->
+        <div class="rounded-2xl bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+            <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700">
+                            <svg class="h-5 w-5 text-slate-600 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Client Directory</h2>
+                    </div>
+                    <span class="inline-flex items-center rounded-lg bg-slate-100 dark:bg-slate-700 px-3 py-1 text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {{ clients|length }} Total
+                    </span>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-700">
+                    <thead class="bg-slate-50/50 dark:bg-slate-800/50">
+                        <tr>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Client</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Contact</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Location</th>
+                            <th scope="col" class="px-6 py-4 text-right text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-slate-50 dark:divide-slate-700">
+                        {% for client in clients %}
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors duration-200">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold">
+                                        {{ client.name[0] | upper }}
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ client.name }}</div>
+                                        <div class="text-xs text-slate-500 dark:text-slate-400">ID: {{ client.id }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="space-y-1">
+                                    <div class="text-sm text-slate-900 dark:text-slate-100">{{ client.email }}</div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">{{ client.phone if client.phone else '—' }}</div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-slate-900 dark:text-slate-100">
+                                    {% if client.city and client.state %}
+                                        {{ client.city }}, {{ client.state }}
+                                    {% elif client.city %}
+                                        {{ client.city }}
+                                    {% elif client.state %}
+                                        {{ client.state }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="{{ url_for('clients.view', id=client.id) }}" 
+                                       class="inline-flex items-center gap-2 rounded-lg bg-slate-100 dark:bg-slate-700 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        View
+                                    </a>
+                                    <a href="{{ url_for('clients.edit', id=client.id) }}" 
+                                       class="inline-flex items-center gap-2 rounded-lg bg-slate-100 dark:bg-slate-700 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                        Edit
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-700 mb-4">
+                                        <svg class="h-8 w-8 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">No clients found</h3>
+                                    <p class="text-slate-500 dark:text-slate-400 mb-6">{% if request.args.get('search', '') %}Try adjusting your search criteria{% else %}Get started by adding your first client{% endif %}</p>
+                                    <a href="{{ url_for('clients.create') }}" 
+                                       class="inline-flex items-center gap-2 rounded-xl bg-slate-900 dark:bg-slate-700 px-6 py-3 text-sm font-medium text-white shadow-lg hover:bg-slate-800 dark:hover:bg-slate-600 transition-all duration-200 hover:scale-105">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                        </svg>
+                                        Add Client
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination %}
+        <div class="mt-8 rounded-2xl bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black/5 dark:ring-white/10 py-4 px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('clients.index', page=pagination.prev_num, search=request.args.get('search', '')) }}" 
+                   class="inline-flex items-center gap-2 rounded-lg bg-slate-100 dark:bg-slate-700 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Previous
+                </a>
+                {% endif %}
+                {% if pagination.has_next %}
+                <a href="{{ url_for('clients.index', page=pagination.next_num, search=request.args.get('search', '')) }}" 
+                   class="inline-flex items-center gap-2 rounded-lg bg-slate-100 dark:bg-slate-700 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                    Next
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-slate-700 dark:text-slate-300">
+                        Showing
+                        <span class="font-medium text-slate-900 dark:text-slate-100">{{ pagination.start }}</span>
+                        to
+                        <span class="font-medium text-slate-900 dark:text-slate-100">{{ pagination.end }}</span>
+                        of
+                        <span class="font-medium text-slate-900 dark:text-slate-100">{{ pagination.total }}</span>
+                        results
+                    </p>
+                </div>
+                <div>
+                    <nav class="flex items-center gap-1" aria-label="Pagination">
+                        {% if pagination.has_prev %}
+                        <a href="{{ url_for('clients.index', page=pagination.prev_num, search=request.args.get('search', '')) }}" 
+                           class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </a>
+                        {% endif %}
+                        
+                        <!-- Page numbers -->
+                        {% for page in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page %}
+                                {% if page == pagination.page %}
+                                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-900 dark:bg-slate-600 text-white text-sm font-medium">
+                                        {{ page }}
+                                    </span>
+                                {% else %}
+                                    <a href="{{ url_for('clients.index', page=page, search=request.args.get('search', '')) }}" 
+                                       class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-sm font-medium">
+                                        {{ page }}
+                                    </a>
+                                {% endif %}
+                            {% else %}
+                                <span class="inline-flex items-center justify-center w-8 h-8 text-slate-400 dark:text-slate-500 text-sm">
+                                    ...
+                                </span>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <a href="{{ url_for('clients.index', page=pagination.next_num, search=request.args.get('search', '')) }}" 
+                           class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let clientToDelete = null;
+
+    function deleteClient(clientId) {
+        clientToDelete = clientId;
+        document.getElementById('delete-modal').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('delete-modal').classList.add('hidden');
+        clientToDelete = null;
+    }
+
+    document.getElementById('confirm-delete')?.addEventListener('click', async function() {
+        if (!clientToDelete) return;
+
+        try {
+            const response = await fetch(`/api/clients/${clientToDelete}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                showToast('Client deleted successfully');
+                window.location.reload();
+            } else {
+                showToast('Failed to delete client', 'error');
+            }
+        } catch (error) {
+            showToast('An error occurred', 'error');
+        }
+
+        closeDeleteModal();
+    });
+
+    // Search functionality
+    document.querySelector('input[name="search"]')?.addEventListener('input', function(e) {
+        if (e.target.value.length > 2) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        }
+    });
+</script>
+{% endblock %} 

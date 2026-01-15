@@ -1,0 +1,15 @@
+[2025-05-19 02:59:51.146596] Starting send_invoice_email for invoice_id=4
+[2025-05-19 02:59:51.151139] Client: Christopher Nichols, Email: chrisnichols17@gmail.com
+[2025-05-19 03:29:33.135787] Starting send_invoice_email for invoice_id=4
+[2025-05-19 03:29:33.142080] Client: Christopher Nichols, Email: chrisnichols17@gmail.com
+[2025-05-24 02:24:06.400821] Starting send_invoice_email for invoice_id=1
+[2025-05-24 02:24:06.407038] Client: Cassie Nichols, Email: chrisnichols17@gmail.com
+[2025-05-24 02:24:06.407691] Subject: Invoice #INV-2025-001 from Aquaforce Pressure Washing, Custom message: 
+[2025-05-24 02:24:06.410613] Attempting to send email via Flask-Mail
+[2025-05-24 02:24:06.410997] Error sending email: 'NoneType' object has no attribute 'server'
+[2025-05-24 02:24:06.411013] Traceback: Traceback (most recent call last):
+  File "/Users/christophernichols/PycharmProjects/AquaCRM/app/routes/emails.py", line 606, in send_invoice_email
+    f.write(f"[{datetime.utcnow()}] Mail config: SERVER={mail.state.server}, PORT={mail.state.port}, USERNAME={mail.state.username}\n")
+                                                         ^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'server'
+

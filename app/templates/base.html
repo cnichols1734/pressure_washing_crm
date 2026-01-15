@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{ 
+        darkMode: localStorage.getItem('darkMode') === 'true' || 
+                  (localStorage.getItem('darkMode') === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    }" 
+    x-init="$watch('darkMode', val => localStorage.setItem('darkMode', val))" 
+    :class="{ 'dark': darkMode }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AquaCRM{% endblock %}</title>
+    
+    <!-- Prevent FOUC (Flash of Unstyled Content) for dark mode -->
+    <script>
+        // This script runs synchronously before any content is rendered
+        // It immediately applies the dark class if dark mode is enabled
+        (function() {
+            const darkMode = localStorage.getItem('darkMode');
+            
+            // If user has explicitly set a preference, use it
+            if (darkMode === 'true') {
+                document.documentElement.classList.add('dark');
+            } 
+            // If no preference is set, respect system preference
+            else if (darkMode === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+                // Set the preference so Alpine.js knows about it
+                localStorage.setItem('darkMode', 'true');
+            }
+        })();
+    </script>
+    <!-- Tailwind CSS from CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom Tailwind configuration -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                            950: '#172554',
+                        },
+                        secondary: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            200: '#99f6e4',
+                            300: '#5eead4',
+                            400: '#2dd4bf',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                            950: '#042f2e',
+                        },
+                        accent: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                            950: '#1e1b4b',
+                        },
+                    }
+                },
+                fontFamily: {
+                    sans: ['Inter var', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                },
+                boxShadow: {
+                    'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
+                }
+            }
+        }
+    </script>
+    <!-- Alpine.js -->
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <!-- Inter font -->
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <style>
+        [x-cloak] { display: none !important; }
+        
+        body {
+            font-family: 'Inter var', ui-sans-serif, system-ui;
+        }
+        
+        /* Custom scrollbar styling */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            @apply bg-gray-100 dark:bg-gray-800;
+            border-radius: 3px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            @apply bg-gray-400 dark:bg-gray-600;
+            border-radius: 3px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            @apply bg-gray-500 dark:bg-gray-500;
+        }
+        
+        /* Firefox scrollbar */
+        .custom-scrollbar {
+            scrollbar-width: thin;
+        }
+        
+        /* Toast animation */
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        
+        @keyframes slideOutRight {
+            from { transform: translateX(0); }
+            to { transform: translateX(100%); }
+        }
+        
+        .animate-slide-in {
+            animation: slideInRight 0.3s forwards;
+        }
+        
+        .animate-slide-out {
+            animation: slideOutRight 0.3s forwards;
+        }
+        
+        /* Active nav indicator */
+        .nav-indicator {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            width: 100%;
+            background-color: #3b82f6;
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+        
+        /* Dark mode transitions */
+        * {
+            transition-property: background-color, border-color, color, fill, stroke;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+        }
+    </style>
+    {% block styles %}{% endblock %}
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col">
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-gray-800 shadow-soft sticky top-0 z-10" x-data="{ isOpen: false, activeTab: window.location.pathname }">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="/" class="flex items-center">
+                            <span class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">AquaCRM</span>
+                            <span class="ml-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-1.5 py-0.5 rounded-md font-medium">BETA</span>
+                        </a>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-6">
+                        <a href="/" 
+                           class="relative inline-flex items-center px-1 pt-1 text-sm font-medium transition-colors duration-200"
+                           :class="activeTab === '/' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'">
+                            <i class="fas fa-tachometer-alt mr-1.5"></i>
+                            Dashboard
+                            <div class="nav-indicator" x-show="activeTab === '/'"></div>
+                        </a>
+                        <a href="/clients" 
+                           class="relative inline-flex items-center px-1 pt-1 text-sm font-medium transition-colors duration-200"
+                           :class="activeTab.startsWith('/clients') ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'">
+                            <i class="fas fa-users mr-1.5"></i>
+                            Clients
+                            <div class="nav-indicator" x-show="activeTab.startsWith('/clients')"></div>
+                        </a>
+                        <a href="/quotes" 
+                           class="relative inline-flex items-center px-1 pt-1 text-sm font-medium transition-colors duration-200"
+                           :class="activeTab.startsWith('/quotes') ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'">
+                            <i class="fas fa-file-invoice mr-1.5"></i>
+                            Quotes
+                            <div class="nav-indicator" x-show="activeTab.startsWith('/quotes')"></div>
+                        </a>
+                        <a href="/invoices" 
+                           class="relative inline-flex items-center px-1 pt-1 text-sm font-medium transition-colors duration-200"
+                           :class="activeTab.startsWith('/invoices') ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'">
+                            <i class="fas fa-file-invoice-dollar mr-1.5"></i>
+                            Invoices
+                            <div class="nav-indicator" x-show="activeTab.startsWith('/invoices')"></div>
+                        </a>
+                        <a href="/services" 
+                           class="relative inline-flex items-center px-1 pt-1 text-sm font-medium transition-colors duration-200"
+                           :class="activeTab.startsWith('/services') ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'">
+                            <i class="fas fa-tools mr-1.5"></i>
+                            Services
+                            <div class="nav-indicator" x-show="activeTab.startsWith('/services')"></div>
+                        </a>
+                        <a href="/payments" 
+                           class="relative inline-flex items-center px-1 pt-1 text-sm font-medium transition-colors duration-200"
+                           :class="activeTab.startsWith('/payments') ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'">
+                            <i class="fas fa-money-bill-wave mr-1.5"></i>
+                            Payments
+                            <div class="nav-indicator" x-show="activeTab.startsWith('/payments')"></div>
+                        </a>
+                    </div>
+                </div>
+                <div class="hidden sm:ml-6 sm:flex sm:items-center">
+                    <!-- Dark Mode Toggle -->
+                    <button @click="darkMode = !darkMode" 
+                            class="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 mr-2">
+                        <span class="sr-only">Toggle dark mode</span>
+                        <i class="fas fa-moon" x-show="!darkMode"></i>
+                        <i class="fas fa-sun" x-show="darkMode"></i>
+                    </button>
+                    
+                    <!-- Notification Bell -->
+                    <button class="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 relative">
+                        <span class="sr-only">View notifications</span>
+                        <i class="fas fa-bell"></i>
+                        <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white dark:ring-gray-800"></span>
+                    </button>
+                    
+                    <!-- User Menu -->
+                    <div class="ml-3 relative" x-data="{ isUserMenuOpen: false }">
+                        <div>
+                            <button @click="isUserMenuOpen = !isUserMenuOpen" class="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800">
+                                <span class="sr-only">Open user menu</span>
+                                <div class="h-8 w-8 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            </button>
+                        </div>
+                        <div x-show="isUserMenuOpen" 
+                             @click.away="isUserMenuOpen = false"
+                             x-transition:enter="transition ease-out duration-100"
+                             x-transition:enter-start="transform opacity-0 scale-95"
+                             x-transition:enter-end="transform opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-75"
+                             x-transition:leave-start="transform opacity-100 scale-100"
+                             x-transition:leave-end="transform opacity-0 scale-95"
+                             class="origin-top-right absolute right-0 mt-2 w-48 rounded-lg shadow-soft py-1 bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-10"
+                             style="display: none;">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">Your Profile</a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">Settings</a>
+                            <div class="border-t border-gray-200 dark:border-gray-600"></div>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">Sign out</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="-mr-2 flex items-center sm:hidden">
+                    <button @click="isOpen = !isOpen" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+                        <span class="sr-only">Open main menu</span>
+                        <i class="fas fa-bars" x-show="!isOpen"></i>
+                        <i class="fas fa-times" x-show="isOpen"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile menu -->
+        <div class="sm:hidden" x-show="isOpen" @click.away="isOpen = false" x-cloak>
+            <div class="pt-2 pb-3 space-y-1">
+                <a href="/" 
+                   class="flex items-center px-3 py-2 text-base font-medium rounded-md"
+                   :class="activeTab === '/' ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'">
+                    <i class="fas fa-tachometer-alt mr-3 text-gray-400 dark:text-gray-500" :class="{'text-blue-500 dark:text-blue-400': activeTab === '/'}"></i>
+                    Dashboard
+                </a>
+                <a href="/clients"
+                   class="flex items-center px-3 py-2 text-base font-medium rounded-md"
+                   :class="activeTab.startsWith('/clients') ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'">
+                    <i class="fas fa-users mr-3 text-gray-400 dark:text-gray-500" :class="{'text-blue-500 dark:text-blue-400': activeTab.startsWith('/clients')}"></i>
+                    Clients
+                </a>
+                <a href="/quotes"
+                   class="flex items-center px-3 py-2 text-base font-medium rounded-md"
+                   :class="activeTab.startsWith('/quotes') ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'">
+                    <i class="fas fa-file-invoice mr-3 text-gray-400 dark:text-gray-500" :class="{'text-blue-500 dark:text-blue-400': activeTab.startsWith('/quotes')}"></i>
+                    Quotes
+                </a>
+                <a href="/invoices"
+                   class="flex items-center px-3 py-2 text-base font-medium rounded-md"
+                   :class="activeTab.startsWith('/invoices') ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'">
+                    <i class="fas fa-file-invoice-dollar mr-3 text-gray-400 dark:text-gray-500" :class="{'text-blue-500 dark:text-blue-400': activeTab.startsWith('/invoices')}"></i>
+                    Invoices
+                </a>
+                <a href="/services"
+                   class="flex items-center px-3 py-2 text-base font-medium rounded-md"
+                   :class="activeTab.startsWith('/services') ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'">
+                    <i class="fas fa-tools mr-3 text-gray-400 dark:text-gray-500" :class="{'text-blue-500 dark:text-blue-400': activeTab.startsWith('/services')}"></i>
+                    Services
+                </a>
+                <a href="/payments"
+                   class="flex items-center px-3 py-2 text-base font-medium rounded-md"
+                   :class="activeTab.startsWith('/payments') ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'">
+                    <i class="fas fa-money-bill-wave mr-3 text-gray-400 dark:text-gray-500" :class="{'text-blue-500 dark:text-blue-400': activeTab.startsWith('/payments')}"></i>
+                    Payments
+                </a>
+            </div>
+            <div class="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center px-4 mb-3">
+                    <button @click="darkMode = !darkMode" 
+                            class="flex items-center px-3 py-2 text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 rounded-md w-full">
+                        <i class="fas fa-moon mr-3 text-gray-400 dark:text-gray-500" x-show="!darkMode"></i>
+                        <i class="fas fa-sun mr-3 text-gray-400 dark:text-gray-500" x-show="darkMode"></i>
+                        <span x-text="darkMode ? 'Light Mode' : 'Dark Mode'"></span>
+                    </button>
+                </div>
+                <div class="flex items-center px-4">
+                    <div class="flex-shrink-0">
+                        <div class="h-10 w-10 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3">
+                        <div class="text-base font-medium text-gray-800 dark:text-gray-200">Admin User</div>
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400">admin@aquacrm.com</div>
+                    </div>
+                </div>
+                <div class="mt-3 space-y-1">
+                    <a href="#" class="flex items-center px-4 py-2 text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100">
+                        <i class="fas fa-user-circle mr-3 text-gray-400 dark:text-gray-500"></i>
+                        Your Profile
+                    </a>
+                    <a href="#" class="flex items-center px-4 py-2 text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100">
+                        <i class="fas fa-cog mr-3 text-gray-400 dark:text-gray-500"></i>
+                        Settings
+                    </a>
+                    <a href="#" class="flex items-center px-4 py-2 text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100">
+                        <i class="fas fa-sign-out-alt mr-3 text-gray-400 dark:text-gray-500"></i>
+                        Sign out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Content -->
+    <main class="flex-grow">
+        <!-- Flash Messages Container -->
+        <div id="flash-messages" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="rounded-lg shadow-sm overflow-hidden mb-4 {% if category == 'success' %}bg-green-50 dark:bg-green-900/20 border-l-4 border-green-400 dark:border-green-500{% elif category == 'error' %}bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 dark:border-red-500{% else %}bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 dark:border-blue-500{% endif %}">
+                        <div class="p-4 flex">
+                            <div class="flex-shrink-0">
+                                {% if category == 'success' %}
+                                <i class="fas fa-check-circle text-green-500 dark:text-green-400"></i>
+                                {% elif category == 'error' %}
+                                <i class="fas fa-exclamation-circle text-red-500 dark:text-red-400"></i>
+                                {% else %}
+                                <i class="fas fa-info-circle text-blue-500 dark:text-blue-400"></i>
+                                {% endif %}
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium {% if category == 'success' %}text-green-800 dark:text-green-200{% elif category == 'error' %}text-red-800 dark:text-red-200{% else %}text-blue-800 dark:text-blue-200{% endif %}">
+                                    {{ message }}
+                                </p>
+                            </div>
+                            <div class="ml-auto pl-3">
+                                <div class="-mx-1.5 -my-1.5">
+                                    <button class="inline-flex rounded-md p-1.5 {% if category == 'success' %}text-green-500 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-800{% elif category == 'error' %}text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800{% else %}text-blue-500 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800{% endif %} focus:outline-none" 
+                                            onclick="this.parentElement.parentElement.parentElement.parentElement.remove()">
+                                        <span class="sr-only">Dismiss</span>
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+            
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {% block header %}
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">{% block heading %}{% endblock %}</h1>
+            {% endblock %}
+            
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <span class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">AquaCRM</span>
+                    <span class="text-gray-500 dark:text-gray-400">&copy; {{ now.year }} All rights reserved.</span>
+                </div>
+                <div class="mt-4 md:mt-0 flex space-x-6">
+                    <a href="#" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                        <span class="sr-only">Privacy Policy</span>
+                        <i class="fas fa-shield-alt mr-1"></i> Privacy
+                    </a>
+                    <a href="#" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                        <span class="sr-only">Terms of Service</span>
+                        <i class="fas fa-file-contract mr-1"></i> Terms
+                    </a>
+                    <a href="#" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                        <span class="sr-only">Support</span>
+                        <i class="fas fa-headset mr-1"></i> Support
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notifications -->
+    <div id="toast" class="fixed bottom-4 right-4 z-50 transform translate-x-full" x-data="{ show: false, message: '', type: 'success' }" 
+         x-show="show" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="transform translate-x-full"
+         x-transition:enter-end="transform translate-x-0"
+         x-transition:leave="transition ease-in duration-300"
+         x-transition:leave-start="transform translate-x-0"
+         x-transition:leave-end="transform translate-x-full"
+         @notify.window="show = true; message = $event.detail.message; type = $event.detail.type || 'success'; setTimeout(() => { show = false }, 3000)"
+         style="display: none;">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 max-w-md" :class="{ 'border-l-4 border-green-500': type === 'success', 'border-l-4 border-red-500': type === 'error' }">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-check-circle text-green-500 dark:text-green-400 text-lg" x-show="type === 'success'"></i>
+                    <i class="fas fa-exclamation-circle text-red-500 dark:text-red-400 text-lg" x-show="type === 'error'"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100" x-text="message"></p>
+                </div>
+                <div class="ml-auto pl-3">
+                    <div class="-mx-1.5 -my-1.5">
+                        <button @click="show = false" class="inline-flex bg-white dark:bg-gray-800 rounded-md p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400">
+                            <span class="sr-only">Dismiss</span>
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Common JavaScript -->
+    <script>
+        function showToast(message, type = 'success') {
+            window.dispatchEvent(new CustomEvent('notify', {
+                detail: {
+                    message: message,
+                    type: type
+                }
+            }));
+        }
+    </script>
+
+    {% block scripts %}{% endblock %}
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

@@ -1,0 +1,430 @@
+{% extends "base.html" %}
+
+{% block title %}{% if invoice %}Edit{% else %}New{% endif %} Invoice - AquaCRM{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-gray-900 dark:to-slate-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-5xl mx-auto">
+        <!-- Header -->
+        <div class="relative overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-xl ring-1 ring-black/5 dark:ring-white/10 mb-8">
+            <div class="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900"></div>
+            <div class="relative px-8 py-8">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div class="space-y-2">
+                        <h1 class="text-2xl font-semibold text-white tracking-tight">
+                            {% if invoice %}Edit Invoice{% else %}New Invoice{% endif %}
+                        </h1>
+                        <p class="text-slate-300 text-base">{% if invoice %}Update invoice details and line items{% else %}Create a new invoice for your client{% endif %}</p>
+                    </div>
+                    <div class="mt-6 lg:mt-0">
+                        <a href="{{ url_for('invoices.index') }}" 
+                           class="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-gray-100 px-6 py-3 text-sm font-medium text-slate-900 shadow-lg hover:bg-slate-50 dark:hover:bg-gray-200 transition-all duration-200 hover:scale-105">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            Back to Invoices
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if quote %}
+        <div class="rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-6 mb-8 shadow-lg ring-1 ring-black/5 dark:ring-white/10">
+            <div class="flex items-start gap-4">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-800">
+                    <svg class="h-5 w-5 text-blue-600 dark:text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-blue-900 dark:text-blue-300">Creating invoice from Quote #{{ quote.quote_number }}</h3>
+                    <p class="text-sm text-blue-700 dark:text-blue-400 mt-1">Client and line items have been pre-filled from the accepted quote.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <form id="invoice-form" method="POST" action="{% if invoice %}{{ url_for('invoices.edit', id=invoice.id) }}{% else %}{{ url_for('invoices.create') }}{% endif %}" class="space-y-8">
+            {{ form.csrf_token }}
+            
+            {% if quote %}
+            <!-- Hidden field to preserve quote_id when creating from quote -->
+            <input type="hidden" name="quote_id" value="{{ quote.id }}">
+            {% endif %}
+
+            <!-- Invoice Information Card -->
+            <div class="rounded-2xl bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+                <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700">
+                            <svg class="h-5 w-5 text-slate-600 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Invoice Information</h2>
+                            <p class="text-sm text-slate-600 dark:text-slate-400">Basic information about the invoice</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <label for="client_id" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Client <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                {{ form.client_id(class="appearance-none w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-700/50 py-3 pl-4 pr-10 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-200 dark:ring-slate-600 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400 transition-all") }}
+                                <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                    <svg class="h-4 w-4 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
+                            {% if form.client_id.errors %}
+                            <div class="text-red-500 text-sm mt-2">
+                                {% for error in form.client_id.errors %}
+                                <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="invoice_number" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Invoice Number <span class="text-red-500">*</span>
+                            </label>
+                            {{ form.invoice_number(class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-700/50 py-3 px-4 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-200 dark:ring-slate-600 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400 transition-all") }}
+                            {% if form.invoice_number.errors %}
+                            <div class="text-red-500 text-sm mt-2">
+                                {% for error in form.invoice_number.errors %}
+                                <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="date_issued" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Date Issued <span class="text-red-500">*</span>
+                            </label>
+                            {{ form.date_issued(class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-700/50 py-3 px-4 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-200 dark:ring-slate-600 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400 transition-all", type="date") }}
+                            {% if form.date_issued.errors %}
+                            <div class="text-red-500 text-sm mt-2">
+                                {% for error in form.date_issued.errors %}
+                                <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="due_date" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Due Date</label>
+                            {{ form.due_date(class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-700/50 py-3 px-4 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-200 dark:ring-slate-600 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400 transition-all", type="date") }}
+                            {% if form.due_date.errors %}
+                            <div class="text-red-500 text-sm mt-2">
+                                {% for error in form.due_date.errors %}
+                                <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="status" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Status <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                {{ form.status(class="appearance-none w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-700/50 py-3 pl-4 pr-10 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-200 dark:ring-slate-600 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400 transition-all") }}
+                                <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                    <svg class="h-4 w-4 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
+                            {% if form.status.errors %}
+                            <div class="text-red-500 text-sm mt-2">
+                                {% for error in form.status.errors %}
+                                <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Description</label>
+                            {{ form.description(class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-700/50 py-3 px-4 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-200 dark:ring-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400 transition-all") }}
+                            {% if form.description.errors %}
+                            <div class="text-red-500 text-sm mt-2">
+                                {% for error in form.description.errors %}
+                                <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="lg:col-span-2">
+                            <label for="notes" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Notes</label>
+                            {{ form.notes(class="block w-full rounded-xl border-0 bg-slate-50 dark:bg-slate-700/50 py-3 px-4 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-200 dark:ring-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400 transition-all", rows="3", placeholder="Add any additional notes or special instructions...") }}
+                            {% if form.notes.errors %}
+                            <div class="text-red-500 text-sm mt-2">
+                                {% for error in form.notes.errors %}
+                                <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Line Items Card -->
+            <div class="rounded-2xl bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+                <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700">
+                            <svg class="h-5 w-5 text-slate-600 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Line Items</h2>
+                            <p class="text-sm text-slate-600 dark:text-slate-400">Add services and items to the invoice</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-8">
+                    <div class="space-y-6">
+                        <div id="line-items" class="space-y-4">
+                            {% if invoice and invoice.items %}
+                                {% for item in invoice.items %}
+                                <div class="line-item bg-slate-50/50 dark:bg-slate-800/50 rounded-xl p-6 border border-slate-100 dark:border-slate-700" data-item-id="{{ item.id }}">
+                                    <input type="hidden" name="items[{{ loop.index0 }}][id]" value="{{ item.id }}">
+                                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                        <div class="md:col-span-5">
+                                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Description</label>
+                                            <input type="text" name="items[{{ loop.index0 }}][description]" value="{{ item.description }}"
+                                                class="block w-full rounded-xl border-0 bg-white dark:bg-slate-700 py-3 px-4 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-200 dark:ring-slate-600 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400 transition-all"
+                                                placeholder="Service description...">
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Quantity</label>
+                                            <input type="number" name="items[{{ loop.index0 }}][quantity]" value="{{ item.quantity }}" step="0.01" min="0"
+                                                class="block w-full rounded-xl border-0 bg-white dark:bg-slate-700 py-3 px-4 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-200 dark:ring-slate-600 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400 transition-all">
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Unit Price</label>
+                                            <input type="number" name="items[{{ loop.index0 }}][unit_price]" value="{{ item.unit_price }}" step="0.01" min="0"
+                                                class="block w-full rounded-xl border-0 bg-white dark:bg-slate-700 py-3 px-4 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-200 dark:ring-slate-600 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400 transition-all">
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Total</label>
+                                            <input type="text" value="${{ "%.2f"|format(item.line_total) }}" readonly
+                                                class="block w-full rounded-xl border-0 bg-slate-100 dark:bg-slate-800 py-3 px-4 text-slate-700 dark:text-slate-300 ring-1 ring-inset ring-slate-200 dark:ring-slate-700">
+                                        </div>
+                                        <div class="md:col-span-1 flex items-end">
+                                            <button type="button" onclick="removeLineItem(this)" 
+                                                    class="w-full md:w-auto inline-flex items-center justify-center p-3 rounded-xl bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800/30 transition-colors">
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% elif prefilled_items %}
+                                {% for item in prefilled_items %}
+                                <div class="line-item bg-slate-50/50 dark:bg-slate-800/50 rounded-xl p-6 border border-slate-100 dark:border-slate-700">
+                                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                        <div class="md:col-span-5">
+                                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Description</label>
+                                            <input type="text" name="items[{{ loop.index0 }}][description]" value="{{ item.description }}"
+                                                class="block w-full rounded-xl border-0 bg-white dark:bg-slate-700 py-3 px-4 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-200 dark:ring-slate-600 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400 transition-all"
+                                                placeholder="Service description...">
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Quantity</label>
+                                            <input type="number" name="items[{{ loop.index0 }}][quantity]" value="{{ item.quantity }}" step="0.01" min="0"
+                                                class="block w-full rounded-xl border-0 bg-white dark:bg-slate-700 py-3 px-4 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-200 dark:ring-slate-600 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400 transition-all">
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Unit Price</label>
+                                            <input type="number" name="items[{{ loop.index0 }}][unit_price]" value="{{ item.unit_price }}" step="0.01" min="0"
+                                                class="block w-full rounded-xl border-0 bg-white dark:bg-slate-700 py-3 px-4 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-200 dark:ring-slate-600 focus:ring-2 focus:ring-slate-600 dark:focus:ring-slate-400 transition-all">
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Total</label>
+                                            <input type="text" value="${{ "%.2f"|format(item.line_total) }}" readonly
+                                                class="block w-full rounded-xl border-0 bg-slate-100 dark:bg-slate-800 py-3 px-4 text-slate-700 dark:text-slate-300 ring-1 ring-inset ring-slate-200 dark:ring-slate-700">
+                                        </div>
+                                        <div class="md:col-span-1 flex items-end">
+                                            <button type="button" onclick="removeLineItem(this)" 
+                                                    class="w-full md:w-auto inline-flex items-center justify-center p-3 rounded-xl bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800/30 transition-colors">
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div class="flex justify-center">
+                            <button type="button" onclick="addLineItem()" 
+                                    class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-sm font-medium text-white shadow-lg hover:bg-slate-800 transition-all duration-200 hover:scale-105">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                Add Line Item
+                            </button>
+                        </div>
+
+                        <!-- Invoice Total -->
+                        <div class="flex justify-end">
+                            <div class="w-full max-w-sm rounded-xl bg-slate-50/50 p-6 border border-slate-100">
+                                <div class="flex justify-between">
+                                    <span class="text-base font-semibold text-slate-900">Total:</span>
+                                    <span class="text-lg font-bold text-slate-900" id="total">$0.00</span>
+                                    <input type="hidden" id="total_input" name="total" value="{{ form.total.data or 0.00 }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row justify-end gap-3">
+                <a href="{{ url_for('invoices.index') }}" 
+                   class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-all duration-200">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-sm font-medium text-white shadow-lg hover:bg-slate-800 transition-all duration-200 hover:scale-105">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    {% if invoice %}Update{% else %}Create{% endif %} Invoice
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let lineItemCount = document.querySelectorAll('.line-item').length;
+    let deletedItemIds = [];
+
+    function addLineItem() {
+        const lineItems = document.getElementById('line-items');
+        const newItem = document.createElement('div');
+        newItem.className = 'line-item bg-slate-50/50 rounded-xl p-6 border border-slate-100';
+        newItem.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div class="md:col-span-5">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Description</label>
+                    <input type="text" name="items[${lineItemCount}][description]"
+                        class="block w-full rounded-xl border-0 bg-white py-3 px-4 text-slate-900 ring-1 ring-inset ring-slate-200 focus:ring-2 focus:ring-slate-600 transition-all"
+                        placeholder="Service description...">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Quantity</label>
+                    <input type="number" name="items[${lineItemCount}][quantity]" value="1" step="0.01" min="0"
+                        class="block w-full rounded-xl border-0 bg-white py-3 px-4 text-slate-900 ring-1 ring-inset ring-slate-200 focus:ring-2 focus:ring-slate-600 transition-all">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Unit Price</label>
+                    <input type="number" name="items[${lineItemCount}][unit_price]" value="0.00" step="0.01" min="0"
+                        class="block w-full rounded-xl border-0 bg-white py-3 px-4 text-slate-900 ring-1 ring-inset ring-slate-200 focus:ring-2 focus:ring-slate-600 transition-all">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Total</label>
+                    <input type="text" value="$0.00" readonly
+                        class="block w-full rounded-xl border-0 bg-slate-100 py-3 px-4 text-slate-700 ring-1 ring-inset ring-slate-200">
+                </div>
+                <div class="md:col-span-1 flex items-end">
+                    <button type="button" onclick="removeLineItem(this)" 
+                            class="w-full md:w-auto inline-flex items-center justify-center p-3 rounded-xl bg-red-100 text-red-700 hover:bg-red-200 transition-colors">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `;
+        lineItems.appendChild(newItem);
+        lineItemCount++;
+        
+        // Add event listeners to new inputs
+        const quantityInput = newItem.querySelector('input[name*="[quantity]"]');
+        const priceInput = newItem.querySelector('input[name*="[unit_price]"]');
+        quantityInput.addEventListener('input', calculateLineTotal);
+        priceInput.addEventListener('input', calculateLineTotal);
+    }
+
+    function removeLineItem(button) {
+        const lineItem = button.closest('.line-item');
+        const itemId = lineItem.dataset.itemId;
+        if (itemId) {
+            deletedItemIds.push(parseInt(itemId));
+        }
+        lineItem.remove();
+        calculateTotals();
+    }
+
+    function calculateLineTotal(event) {
+        const lineItem = event.target.closest('.line-item');
+        const quantity = parseFloat(lineItem.querySelector('input[name*="[quantity]"]').value) || 0;
+        const unitPrice = parseFloat(lineItem.querySelector('input[name*="[unit_price]"]').value) || 0;
+        const total = quantity * unitPrice;
+        lineItem.querySelector('input[readonly]').value = `$${total.toFixed(2)}`;
+        calculateTotals();
+    }
+
+    function calculateTotals() {
+        let total = 0;
+        document.querySelectorAll('.line-item').forEach(item => {
+            const lineTotal = parseFloat(item.querySelector('input[readonly]').value.replace('$', '')) || 0;
+            total += lineTotal;
+        });
+
+        document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+        document.getElementById('total_input').value = total.toFixed(2);
+    }
+
+    // Add event listeners to existing inputs
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.line-item input[type="number"]').forEach(input => {
+            input.addEventListener('input', calculateLineTotal);
+        });
+        
+        // Calculate initial totals
+        calculateTotals();
+    });
+
+    // Form submission
+    document.getElementById('invoice-form').addEventListener('submit', function(e) {
+        // Add deleted item IDs to form data before submission
+        deletedItemIds.forEach(id => {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'deleted_items[]';
+            hiddenInput.value = id;
+            this.appendChild(hiddenInput);
+        });
+        
+        // Let the form submit naturally
+    });
+</script>
+{% endblock %} 
